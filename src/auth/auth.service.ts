@@ -16,7 +16,7 @@ import { SendVerificationCodeDto } from './dto/send-verification-code.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 
 @Injectable()
-export class UserService {
+export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
