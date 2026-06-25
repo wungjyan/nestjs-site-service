@@ -17,8 +17,30 @@ model User {
   nickname      String?  @db.VarChar(50)
   avatar        String?  @db.VarChar(255)
   status        Int      @default(1) @db.TinyInt
-  createdAt     DateTime @default(now())
-  updateAt      DateTime?
+  created_at    DateTime @default(now())
+  update_at     DateTime @updatedAt
+  user_roles    UserRole[]
 
   @@map("users")
+}
+
+model Role {
+  id         Int      @id @default(autoincrement())
+  code       String   @unique @db.VarChar(50)
+  name       String   @db.VarChar(50)
+  created_at DateTime @default(now())
+  user_roles UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  user      User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id   Int
+  role      Role     @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  role_id   Int
+  created_at DateTime @default(now())
+
+  @@id([user_id, role_id])
+  @@map("user_roles")
 }
