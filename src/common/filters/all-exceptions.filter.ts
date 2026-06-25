@@ -4,11 +4,14 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { Response } from 'express';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
+  private readonly logger = new Logger(AllExceptionsFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -33,11 +36,21 @@ export class AllExceptionsFilter implements ExceptionFilter {
           message = obj.message || exception.message;
         }
       }
+    } else {
+      // 非 HttpException 的错误：打印日志方便排查
+      this.logger.error('未捕获的异常', exception instanceof Error ? exception.stack : '');
     }
+
+    // 开发环境下暴露真实错误信息
+    const isDev = process.env.NODE_ENV === 'development';
+    const errorMessage =
+      isDev && exception instanceof Error
+        ? exception.message
+        : message;
 
     response.status(status).json({
       code: status,
-      message,
+      message: errorMessage,
       ...(errors && { errors }),
     });
   }
