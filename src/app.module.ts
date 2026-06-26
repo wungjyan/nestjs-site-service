@@ -6,6 +6,9 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { EmailModule } from './email/email.module';
 import { RedisModule } from './redis/redis.module';
+import { ArticlesModule } from './articles/articles.module';
+import { CategoriesModule } from './categories/categories.module';
+import { TagsModule } from './tags/tags.module';
 
 const envFilePath =
   process.env.NODE_ENV === 'production'
@@ -22,6 +25,9 @@ const envFilePath =
     RedisModule,
     EmailModule,
     AuthModule,
+    ArticlesModule,
+    CategoriesModule,
+    TagsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
