@@ -1,7 +1,7 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
-  moduleFormat    = "cjs"
+  provider    = "prisma-client"
+  output      = "../src/generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
@@ -9,17 +9,17 @@ datasource db {
 }
 
 model User {
-  id            Int      @id @default(autoincrement())
-  username      String?   @unique @db.VarChar(50)
-  email         String  @unique @db.VarChar(50)
-  is_email_verified Boolean @default(false)
-  password_hash String   @db.VarChar(255)
-  nickname      String?  @db.VarChar(50)
-  avatar        String?  @db.VarChar(255)
-  status        Int      @default(1) @db.TinyInt
-  created_at    DateTime @default(now())
-  update_at     DateTime @updatedAt
-  user_roles    UserRole[]
+  id                Int      @id @default(autoincrement())
+  username          String?  @unique @db.VarChar(50)
+  email             String   @unique @db.VarChar(50)
+  is_email_verified Boolean  @default(false)
+  password_hash     String   @db.VarChar(255)
+  nickname          String?  @db.VarChar(50)
+  avatar            String?  @db.VarChar(255)
+  status            Int      @default(1) @db.TinyInt
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+  user_roles        UserRole[]
 
   @@map("users")
 }
@@ -35,12 +35,85 @@ model Role {
 }
 
 model UserRole {
-  user      User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  user_id   Int
-  role      Role     @relation(fields: [role_id], references: [id], onDelete: Cascade)
-  role_id   Int
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id    Int
+  role       Role     @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  role_id    Int
   created_at DateTime @default(now())
 
   @@id([user_id, role_id])
   @@map("user_roles")
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum PricingType {
+  FREE
+  MEMBER_INCLUDED
+  PAID_ONCE
+}
+
+model Article {
+  id           Int           @id @default(autoincrement())
+  title        String        @db.VarChar(255)
+  slug         String        @unique @db.VarChar(255)
+  summary      String?       @db.Text
+  content      String        @db.LongText
+  cover_image  String?       @db.VarChar(500)
+  status       ArticleStatus @default(DRAFT)
+  pricing_type PricingType   @default(FREE)
+  sort_order   Int           @default(0)
+  view_count   Int           @default(0)
+  category_id  Int?
+  published_at DateTime?
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+
+  category     Category?     @relation(fields: [category_id], references: [id])
+  article_tags ArticleTag[]
+
+  @@index([category_id, status, published_at])
+  @@index([status, published_at])
+  @@map("articles")
+}
+
+model Category {
+  id          Int        @id @default(autoincrement())
+  name        String     @unique @db.VarChar(100)
+  slug        String     @unique @db.VarChar(100)
+  description String?    @db.Text
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
+
+  articles    Article[]
+
+  @@map("categories")
+}
+
+model Tag {
+  id          Int        @id @default(autoincrement())
+  name        String     @unique @db.VarChar(50)
+  slug        String     @unique @db.VarChar(50)
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
+
+  article_tags ArticleTag[]
+
+  @@map("tags")
+}
+
+model ArticleTag {
+  article_id Int
+  tag_id     Int
+
+  article Article @relation(fields: [article_id], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@id([article_id, tag_id])
+  @@index([tag_id])
+  @@map("article_tags")
 }
