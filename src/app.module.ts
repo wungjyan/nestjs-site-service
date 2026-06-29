@@ -9,6 +9,8 @@ import { RedisModule } from './redis/redis.module';
 import { ArticlesModule } from './articles/articles.module';
 import { CategoriesModule } from './categories/categories.module';
 import { TagsModule } from './tags/tags.module';
+import { LoggingModule } from './common/logging/logging.module';
+import { CommonModule } from './common/common.module';
 
 const envFilePath =
   process.env.NODE_ENV === 'production'
@@ -21,6 +23,8 @@ const envFilePath =
       isGlobal: true,
       envFilePath,
     }),
+    LoggingModule,
+    CommonModule,
     PrismaModule,
     RedisModule,
     EmailModule,

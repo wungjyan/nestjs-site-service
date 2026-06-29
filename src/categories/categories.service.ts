@@ -1,23 +1,36 @@
 import {
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { APP_LOGGER } from 'src/common/logging/logger.token';
 import { PrismaService } from '../prisma/prisma.service';
+import type { LoggerService } from '@nestjs/common';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Injectable()
 export class CategoriesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(APP_LOGGER) private readonly logger: LoggerService,
+  ) {}
 
   async create(dto: CreateCategoryDto) {
     try {
-      return await this.prisma.category.create({
+      const category = await this.prisma.category.create({
         data: dto,
       });
+
+      this.logger.log(`Category created: ${category.id}`);
+      return category;
     } catch (error) {
-      this.handleUniqueConstraintError(error);
+      this.throwIfUniqueConstraintError(error);
+      this.logger.error(
+        'Category create failed',
+        error instanceof Error ? error.stack : undefined,
+      );
       throw error;
     }
   }
@@ -48,12 +61,19 @@ export class CategoriesService {
     await this.findOne(id);
 
     try {
-      return await this.prisma.category.update({
+      const category = await this.prisma.category.update({
         where: { id },
         data: dto,
       });
+
+      this.logger.log(`Category updated: ${id}`);
+      return category;
     } catch (error) {
-      this.handleUniqueConstraintError(error);
+      this.throwIfUniqueConstraintError(error);
+      this.logger.error(
+        `Category update failed: ${id}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw error;
     }
   }
@@ -73,11 +93,13 @@ export class CategoriesService {
       where: { id },
     });
 
+    this.logger.log(`Category deleted: ${id}`);
     return { message: '分类已删除' };
   }
 
-  private handleUniqueConstraintError(error: unknown) {
+  private throwIfUniqueConstraintError(error: unknown) {
     if (this.isUniqueConstraintError(error)) {
+      this.logger.warn('Category unique constraint conflict');
       throw new ConflictException('分类名称或 slug 已存在');
     }
   }

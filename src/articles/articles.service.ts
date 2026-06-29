@@ -1,18 +1,24 @@
 import {
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client';
 import { ArticleStatus } from '../generated/prisma/enums';
+import { APP_LOGGER } from 'src/common/logging/logger.token';
 import { PrismaService } from '../prisma/prisma.service';
+import type { LoggerService } from '@nestjs/common';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { AdminQueryArticleDto, QueryArticleDto } from './dto/query-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 
 @Injectable()
 export class ArticlesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(APP_LOGGER) private readonly logger: LoggerService,
+  ) {}
 
   async create(dto: CreateArticleDto) {
     const { tag_ids, ...article_data } = dto;
@@ -33,6 +39,7 @@ export class ArticlesService {
       omit: this.articleOmit,
     });
 
+    this.logger.log(`Article created: ${article.id}`);
     return this.formatArticle(article);
   }
 
@@ -169,6 +176,7 @@ export class ArticlesService {
       omit: this.articleOmit,
     });
 
+    this.logger.log(`Article updated: ${id}`);
     return this.formatArticle(updatedArticle);
   }
 
@@ -176,6 +184,7 @@ export class ArticlesService {
     await this.findOneForAdmin(id);
     await this.prisma.article.delete({ where: { id } });
 
+    this.logger.log(`Article deleted: ${id}`);
     return { message: '文章已删除' };
   }
 

@@ -4,13 +4,18 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
-  Logger,
+  Inject,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { APP_LOGGER } from '../logging/logger.token';
+import type { LoggerService } from '@nestjs/common';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
-  private readonly logger = new Logger(AllExceptionsFilter.name);
+  constructor(
+    @Inject(APP_LOGGER)
+    private readonly logger: LoggerService,
+  ) {}
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
@@ -38,7 +43,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
       }
     } else {
       // 非 HttpException 的错误：打印日志方便排查
-      this.logger.error('未捕获的异常', exception instanceof Error ? exception.stack : '');
+      this.logger.error(
+        '未捕获的异常',
+        exception instanceof Error ? exception.stack : undefined,
+      );
     }
 
     // 开发环境下暴露真实错误信息

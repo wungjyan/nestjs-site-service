@@ -1,23 +1,36 @@
 import {
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { APP_LOGGER } from 'src/common/logging/logger.token';
 import { PrismaService } from '../prisma/prisma.service';
+import type { LoggerService } from '@nestjs/common';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 
 @Injectable()
 export class TagsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(APP_LOGGER) private readonly logger: LoggerService,
+  ) {}
 
   async create(dto: CreateTagDto) {
     try {
-      return await this.prisma.tag.create({
+      const tag = await this.prisma.tag.create({
         data: dto,
       });
+
+      this.logger.log(`Tag created: ${tag.id}`);
+      return tag;
     } catch (error) {
-      this.handleUniqueConstraintError(error);
+      this.throwIfUniqueConstraintError(error);
+      this.logger.error(
+        'Tag create failed',
+        error instanceof Error ? error.stack : undefined,
+      );
       throw error;
     }
   }
@@ -48,12 +61,19 @@ export class TagsService {
     await this.findOne(id);
 
     try {
-      return await this.prisma.tag.update({
+      const tag = await this.prisma.tag.update({
         where: { id },
         data: dto,
       });
+
+      this.logger.log(`Tag updated: ${id}`);
+      return tag;
     } catch (error) {
-      this.handleUniqueConstraintError(error);
+      this.throwIfUniqueConstraintError(error);
+      this.logger.error(
+        `Tag update failed: ${id}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw error;
     }
   }
@@ -73,11 +93,13 @@ export class TagsService {
       where: { id },
     });
 
+    this.logger.log(`Tag deleted: ${id}`);
     return { message: '标签已删除' };
   }
 
-  private handleUniqueConstraintError(error: unknown) {
+  private throwIfUniqueConstraintError(error: unknown) {
     if (this.isUniqueConstraintError(error)) {
+      this.logger.warn('Tag unique constraint conflict');
       throw new ConflictException('标签名称或 slug 已存在');
     }
   }
